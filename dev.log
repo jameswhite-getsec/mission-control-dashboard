@@ -1,12 +1,17 @@
 
 > mission-control@0.1.0 dev
-> next dev --port 3333 --port 3333
+> next dev --port 3333 --webpack
 
-▲ Next.js 16.2.1 (Turbopack)
+▲ Next.js 16.2.1 (webpack)
 - Local:         http://localhost:3333
 - Network:       http://192.168.1.96:3333
-✓ Ready in 205ms
+✓ Ready in 210ms
 
- GET /api/stats 200 in 97ms (next.js: 90ms, application-code: 8ms)
- GET /api/events 200 in 108ms (next.js: 106ms, application-code: 1700µs)
- GET / 200 in 1299ms (next.js: 1063ms, application-code: 235ms)
+ GET /api/events 200 in 217ms (next.js: 208ms, application-code: 9ms)
+ GET /api/stats 200 in 221ms (next.js: 212ms, application-code: 9ms)
+ GET / 200 in 2.9s (next.js: 2.6s, application-code: 330ms)
+ GET /api/stats 200 in 2ms (next.js: 783µs, application-code: 1487µs)
+ GET /api/events 200 in 2ms (next.js: 678µs, application-code: 1554µs)
+ GET / 200 in 138ms (next.js: 47ms, application-code: 91ms)
+ GET /api/agents 200 in 116ms (next.js: 112ms, application-code: 4ms)
+ GET /agents 200 in 518ms (next.js: 383ms, application-code: 135ms)
