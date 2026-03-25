@@ -1,70 +1,102 @@
+import { readFile, writeFile } from 'fs/promises'
+import { join } from 'path'
+
+const LOCAL_PATH = join(process.cwd(), '.local-agents.json')
+
+const defaultAgents = [
+  {
+    id: 'agent-001',
+    name: 'Code Review Bot',
+    model: 'claude-opus-4-6',
+    status: 'active',
+    lastActive: '2 min ago',
+    description: 'Reviews pull requests and suggests improvements',
+  },
+  {
+    id: 'agent-002',
+    name: 'Test Generator',
+    model: 'claude-sonnet-4-6',
+    status: 'active',
+    lastActive: '5 min ago',
+    description: 'Generates unit and integration tests',
+  },
+  {
+    id: 'agent-003',
+    name: 'Doc Writer',
+    model: 'claude-haiku-4-5',
+    status: 'idle',
+    lastActive: '1 hour ago',
+    description: 'Generates documentation from code',
+  },
+  {
+    id: 'agent-004',
+    name: 'Bug Triager',
+    model: 'claude-sonnet-4-6',
+    status: 'active',
+    lastActive: '12 min ago',
+    description: 'Analyzes and categorizes bug reports',
+  },
+  {
+    id: 'agent-005',
+    name: 'Dependency Checker',
+    model: 'claude-haiku-4-5',
+    status: 'idle',
+    lastActive: '3 hours ago',
+    description: 'Monitors and updates package dependencies',
+  },
+  {
+    id: 'agent-006',
+    name: 'Security Scanner',
+    model: 'claude-opus-4-6',
+    status: 'error',
+    lastActive: '30 min ago',
+    description: 'Scans code for security vulnerabilities',
+  },
+  {
+    id: 'agent-007',
+    name: 'Performance Profiler',
+    model: 'claude-sonnet-4-6',
+    status: 'idle',
+    lastActive: '2 hours ago',
+    description: 'Identifies performance bottlenecks',
+  },
+  {
+    id: 'agent-008',
+    name: 'Migration Assistant',
+    model: 'claude-opus-4-6',
+    status: 'idle',
+    lastActive: '1 day ago',
+    description: 'Helps migrate between framework versions',
+  },
+]
+
+async function loadAgents() {
+  try {
+    const raw = await readFile(LOCAL_PATH, 'utf-8')
+    return JSON.parse(raw)
+  } catch {
+    return defaultAgents
+  }
+}
+
+async function saveAgents(agents: unknown[]) {
+  await writeFile(LOCAL_PATH, JSON.stringify(agents, null, 2))
+}
+
 export async function GET() {
-  return Response.json({
-    agents: [
-      {
-        id: 'agent-001',
-        name: 'Code Review Bot',
-        model: 'claude-opus-4-6',
-        status: 'active',
-        lastActive: '2 min ago',
-        description: 'Reviews pull requests and suggests improvements',
-      },
-      {
-        id: 'agent-002',
-        name: 'Test Generator',
-        model: 'claude-sonnet-4-6',
-        status: 'active',
-        lastActive: '5 min ago',
-        description: 'Generates unit and integration tests',
-      },
-      {
-        id: 'agent-003',
-        name: 'Doc Writer',
-        model: 'claude-haiku-4-5',
-        status: 'idle',
-        lastActive: '1 hour ago',
-        description: 'Generates documentation from code',
-      },
-      {
-        id: 'agent-004',
-        name: 'Bug Triager',
-        model: 'claude-sonnet-4-6',
-        status: 'active',
-        lastActive: '12 min ago',
-        description: 'Analyzes and categorizes bug reports',
-      },
-      {
-        id: 'agent-005',
-        name: 'Dependency Checker',
-        model: 'claude-haiku-4-5',
-        status: 'idle',
-        lastActive: '3 hours ago',
-        description: 'Monitors and updates package dependencies',
-      },
-      {
-        id: 'agent-006',
-        name: 'Security Scanner',
-        model: 'claude-opus-4-6',
-        status: 'error',
-        lastActive: '30 min ago',
-        description: 'Scans code for security vulnerabilities',
-      },
-      {
-        id: 'agent-007',
-        name: 'Performance Profiler',
-        model: 'claude-sonnet-4-6',
-        status: 'idle',
-        lastActive: '2 hours ago',
-        description: 'Identifies performance bottlenecks',
-      },
-      {
-        id: 'agent-008',
-        name: 'Migration Assistant',
-        model: 'claude-opus-4-6',
-        status: 'idle',
-        lastActive: '1 day ago',
-        description: 'Helps migrate between framework versions',
-      },
-    ],
-  })
+  const agents = await loadAgents()
+  return Response.json({ agents })
+}
+
+export async function PUT(request: Request) {
+  const agent = await request.json()
+  const agents = await loadAgents()
+  const idx = agents.findIndex((a: { id: string }) => a.id === agent.id)
+  if (idx >= 0) {
+    agents[idx] = agent
+  } else {
+    agents.unshift(agent)
+  }
+  await saveAgents(agents)
+  return Response.json({ agent })
 }

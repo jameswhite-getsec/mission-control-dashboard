@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Bot,
+  Columns3,
   MessageSquare,
   Activity,
   Brain,
@@ -14,6 +15,7 @@ import {
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/kanban', label: 'Kanban', icon: Columns3 },
   { href: '/agents', label: 'Agents', icon: Bot },
   { href: '/sessions', label: 'Sessions', icon: MessageSquare },
   { href: '/events', label: 'Events', icon: Activity },
