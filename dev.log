@@ -1,0 +1,12 @@
+
+> mission-control@0.1.0 dev
+> next dev --port 3333 --port 3333
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3333
+- Network:       http://192.168.1.96:3333
+✓ Ready in 205ms
+
+ GET /api/stats 200 in 97ms (next.js: 90ms, application-code: 8ms)
+ GET /api/events 200 in 108ms (next.js: 106ms, application-code: 1700µs)
+ GET / 200 in 1299ms (next.js: 1063ms, application-code: 235ms)
