@@ -95,6 +95,7 @@ export default function AgentList({ initialAgents }: { initialAgents: Agent[] })
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
         onSave={handleSave}
+        allAgents={agents}
       />
     </>
   )

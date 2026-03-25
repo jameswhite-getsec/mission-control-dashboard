@@ -5,10 +5,9 @@
 ▲ Next.js 16.2.1 (webpack)
 - Local:         http://localhost:3333
 - Network:       http://192.168.1.96:3333
-✓ Ready in 221ms
+✓ Ready in 207ms
 
- GET /api/events 200 in 238ms (next.js: 228ms, application-code: 10ms)
- GET /api/stats 200 in 242ms (next.js: 232ms, application-code: 9ms)
- GET / 200 in 2.6s (next.js: 2.3s, application-code: 363ms)
- GET /api/agents 200 in 93ms (next.js: 87ms, application-code: 6ms)
- GET /kanban 200 in 438ms (next.js: 259ms, application-code: 178ms)
+ GET /api/agents 200 in 164ms (next.js: 156ms, application-code: 8ms)
+ GET /kanban 200 in 2.5s (next.js: 2.2s, application-code: 287ms)
+ GET /api/agents 200 in 3ms (next.js: 1124µs, application-code: 1617µs)
+ GET /agents/tree 200 in 314ms (next.js: 243ms, application-code: 71ms)

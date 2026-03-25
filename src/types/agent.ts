@@ -6,6 +6,7 @@ export interface Agent {
   lastActive: string
   description: string
   avatarUrl?: string
+  parentId?: string
   task?: string
   markdownFiles?: {
     'SOUL.md': string

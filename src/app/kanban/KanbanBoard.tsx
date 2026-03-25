@@ -187,6 +187,7 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
         onSave={handleSave}
+        allAgents={Object.values(board).flat()}
       />
     </>
   )

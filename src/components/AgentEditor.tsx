@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Image as ImageIcon } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { X, Image as ImageIcon, Upload } from 'lucide-react'
 import type { Agent } from '@/types/agent'
 
 const MODELS = [
@@ -11,24 +11,32 @@ const MODELS = [
 ]
 
 const MD_TABS = ['SOUL.md', 'AGENTS.md', 'USER.md'] as const
+type AvatarMode = 'upload' | 'url'
 
 interface AgentEditorProps {
   agent: Agent | null
   open: boolean
   onClose: () => void
   onSave: (agent: Agent) => void
+  allAgents?: Agent[]
 }
 
-export default function AgentEditor({ agent, open, onClose, onSave }: AgentEditorProps) {
+export default function AgentEditor({ agent, open, onClose, onSave, allAgents }: AgentEditorProps) {
   const isNew = !agent?.id
   const [form, setForm] = useState<Agent>(blank())
   const [activeTab, setActiveTab] = useState<(typeof MD_TABS)[number]>('SOUL.md')
   const [saving, setSaving] = useState(false)
+  const [avatarMode, setAvatarMode] = useState<AvatarMode>('upload')
+  const [uploading, setUploading] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setForm(agent ? { ...agent, markdownFiles: agent.markdownFiles ?? blankMd() } : blank())
       setActiveTab('SOUL.md')
+      setAvatarPreview(null)
+      setAvatarMode(agent?.avatarUrl ? 'url' : 'upload')
     }
   }, [open, agent])
 
@@ -41,12 +49,34 @@ export default function AgentEditor({ agent, open, onClose, onSave }: AgentEdito
       lastActive: 'Just now',
       description: '',
       avatarUrl: '',
+      parentId: '',
       markdownFiles: blankMd(),
     }
   }
 
   function blankMd() {
     return { 'SOUL.md': '', 'AGENTS.md': '', 'USER.md': '' }
+  }
+
+  async function handleAvatarUpload(file: File) {
+    const agentId = form.id || `agent-${Date.now()}`
+    if (!form.id) setForm((f) => ({ ...f, id: agentId }))
+
+    setUploading(true)
+    try {
+      const previewUrl = URL.createObjectURL(file)
+      setAvatarPreview(previewUrl)
+
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('agentId', agentId)
+
+      const res = await fetch('/api/avatars', { method: 'POST', body: fd })
+      const { url } = await res.json()
+      setForm((f) => ({ ...f, id: agentId, avatarUrl: url }))
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleSave() {
@@ -68,8 +98,12 @@ export default function AgentEditor({ agent, open, onClose, onSave }: AgentEdito
     }
   }
 
+  const parentOptions = (allAgents ?? []).filter((a) => a.id !== form.id && a.id !== '')
+
   const inputClass =
     'w-full px-3 py-2 text-[13px] border border-border rounded-md bg-input-bg text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary'
+
+  const displayAvatar = avatarPreview || form.avatarUrl
 
   return (
     <>
@@ -120,6 +154,25 @@ export default function AgentEditor({ agent, open, onClose, onSave }: AgentEdito
             </select>
           </div>
 
+          {/* Parent Agent */}
+          {parentOptions.length > 0 && (
+            <div>
+              <label className="text-xs text-muted block mb-1.5 font-medium">Parent (Boss) Agent</label>
+              <select
+                value={form.parentId ?? ''}
+                onChange={(e) => setForm({ ...form, parentId: e.target.value || undefined })}
+                className={inputClass}
+              >
+                <option value="">None (root agent)</option>
+                {parentOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Description */}
           <div>
             <label className="text-xs text-muted block mb-1.5 font-medium">Description</label>
@@ -132,31 +185,85 @@ export default function AgentEditor({ agent, open, onClose, onSave }: AgentEdito
             />
           </div>
 
-          {/* Avatar URL */}
+          {/* Avatar */}
           <div>
-            <label className="text-xs text-muted block mb-1.5 font-medium">Avatar URL</label>
-            <div className="flex items-center gap-3">
-              <input
-                value={form.avatarUrl ?? ''}
-                onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })}
-                placeholder="https://example.com/avatar.png"
-                className={inputClass + ' flex-1'}
-              />
-              <div className="w-9 h-9 rounded-lg bg-surface border border-border flex items-center justify-center shrink-0 overflow-hidden">
-                {form.avatarUrl ? (
-                  <img
-                    src={form.avatarUrl}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      ;(e.target as HTMLImageElement).style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <ImageIcon className="w-4 h-4 text-muted" />
-                )}
-              </div>
+            <label className="text-xs text-muted block mb-1.5 font-medium">Avatar</label>
+            {/* Mode tabs */}
+            <div className="flex gap-0 border-b border-border mb-3">
+              {(['upload', 'url'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setAvatarMode(mode)}
+                  className={`px-3 py-1.5 text-[12px] font-medium transition-colors border-b-2 -mb-px capitalize ${
+                    avatarMode === mode
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted hover:text-foreground'
+                  }`}
+                >
+                  {mode === 'upload' ? 'Upload' : 'URL'}
+                </button>
+              ))}
             </div>
+
+            {avatarMode === 'upload' ? (
+              <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleAvatarUpload(file)
+                  }}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] border border-border rounded-md bg-input-bg text-muted hover:text-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {uploading ? 'Uploading...' : 'Choose file'}
+                </button>
+                <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                  {displayAvatar ? (
+                    <img
+                      src={displayAvatar}
+                      alt="avatar"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <ImageIcon className="w-4 h-4 text-muted" />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <input
+                  value={form.avatarUrl ?? ''}
+                  onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })}
+                  placeholder="https://example.com/avatar.png"
+                  className={inputClass + ' flex-1'}
+                />
+                <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                  {form.avatarUrl ? (
+                    <img
+                      src={form.avatarUrl}
+                      alt="avatar"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <ImageIcon className="w-4 h-4 text-muted" />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Markdown files editor */}
@@ -208,7 +315,7 @@ export default function AgentEditor({ agent, open, onClose, onSave }: AgentEdito
             disabled={saving}
             className="px-3 py-1.5 text-[13px] bg-primary text-white rounded-md hover:bg-primary-hover transition-colors font-medium disabled:opacity-50"
           >
-            {saving ? 'Saving…' : isNew ? 'Create' : 'Save'}
+            {saving ? 'Saving...' : isNew ? 'Create' : 'Save'}
           </button>
         </div>
       </div>

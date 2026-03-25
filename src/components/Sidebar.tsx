@@ -11,12 +11,14 @@ import {
   Brain,
   Settings,
   Zap,
+  GitBranch,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/kanban', label: 'Kanban', icon: Columns3 },
   { href: '/agents', label: 'Agents', icon: Bot },
+  { href: '/agents/tree', label: 'Agent Tree', icon: GitBranch },
   { href: '/sessions', label: 'Sessions', icon: MessageSquare },
   { href: '/events', label: 'Events', icon: Activity },
   { href: '/memory', label: 'Memory', icon: Brain },
@@ -39,7 +41,11 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-2 mt-1 space-y-0.5">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+          const isActive = href === '/'
+            ? pathname === '/'
+            : href === '/agents'
+              ? pathname === '/agents'
+              : pathname.startsWith(href)
           return (
             <Link
               key={href}
