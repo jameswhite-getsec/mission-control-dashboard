@@ -1,3 +1,5 @@
+// TODO: openclaw doesn't expose an events/audit-log endpoint yet.
+// When it does, replace this with: execFileSync('openclaw', ['events', 'list', '--json'])
 export async function GET() {
   return Response.json({
     events: [

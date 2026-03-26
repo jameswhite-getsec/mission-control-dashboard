@@ -62,6 +62,8 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
     if (!destination) return
     if (source.droppableId === destination.droppableId && source.index === destination.index) return
 
+    let movedAgent: (Agent & { kanbanStatus: KanbanStatus }) | null = null
+
     setBoard((prev) => {
       const next = { ...prev }
       const srcCol = [...prev[source.droppableId]]
@@ -77,9 +79,24 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
         destCol.splice(destination.index, 0, updated)
         next[source.droppableId] = srcCol
         next[destination.droppableId] = destCol
+        movedAgent = updated
       }
       return next
     })
+
+    // Persist status change to .local-agents.json via PATCH
+    if (movedAgent) {
+      const agent = movedAgent as Agent & { kanbanStatus: KanbanStatus }
+      fetch('/api/agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: agent.id,
+          status: agent.status,
+          kanbanStatus: agent.kanbanStatus,
+        }),
+      }).catch(() => { /* optimistic update already applied */ })
+    }
   }, [])
 
   function handleCardClick(agent: Agent) {

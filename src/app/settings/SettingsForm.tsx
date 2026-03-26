@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Save, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, Check, Loader2 } from 'lucide-react'
 
 export default function SettingsForm() {
   const [model, setModel] = useState('claude-opus-4-6')
@@ -9,8 +9,32 @@ export default function SettingsForm() {
   const [baseUrl, setBaseUrl] = useState('https://api.anthropic.com')
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [version, setVersion] = useState<string | null>(null)
+  const [channels, setChannels] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.model) {
+          // Normalize "gpt-4o" etc — only set if it's one of our known models
+          const known = ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5']
+          if (known.includes(data.model)) setModel(data.model)
+        }
+        if (data.version) setVersion(data.version)
+        if (data.channels) setChannels(data.channels)
+      })
+      .catch(() => { /* keep defaults */ })
+      .finally(() => setLoading(false))
+  }, [])
 
   const handleSave = () => {
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, baseUrl }),
+    }).catch(() => { /* informational only */ })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -21,8 +45,26 @@ export default function SettingsForm() {
     { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5', desc: 'Fastest, best for simple tasks' },
   ]
 
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-muted text-[13px] py-8">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading settings…
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl space-y-4">
+      {version && (
+        <div className="text-xs text-muted px-1">
+          OpenClaw {version}
+          {channels.length > 0 && (
+            <span className="ml-3 text-muted/60">{channels.slice(0, 2).join(' · ')}</span>
+          )}
+        </div>
+      )}
+
       <div className="bg-card-bg border border-border rounded-lg p-5">
         <h2 className="text-[13px] font-medium mb-4">Default Model</h2>
         <div className="space-y-2">
@@ -48,6 +90,9 @@ export default function SettingsForm() {
             </label>
           ))}
         </div>
+        <p className="text-[11px] text-muted mt-3">
+          To change the active model in OpenClaw, run: <code className="font-mono">openclaw config set model &lt;id&gt;</code>
+        </p>
       </div>
 
       <div className="bg-card-bg border border-border rounded-lg p-5">
