@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import Link from 'next/link'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
-import { Bot } from 'lucide-react'
+import { Bot, ExternalLink } from 'lucide-react'
 import type { Agent, KanbanStatus } from '@/types/agent'
+import type { Project } from '@/types/project'
 import AgentEditor from '@/components/AgentEditor'
 
 const COLUMNS: { id: KanbanStatus; label: string; color: string; dot: string }[] = [
@@ -43,7 +45,13 @@ interface BoardState {
   [col: string]: (Agent & { kanbanStatus: KanbanStatus })[]
 }
 
-export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] }) {
+export default function KanbanBoard({
+  initialAgents,
+  projects,
+}: {
+  initialAgents: Agent[]
+  projects: Project[]
+}) {
   const [board, setBoard] = useState<BoardState>(() => {
     const b: BoardState = {}
     for (const col of COLUMNS) b[col.id] = []
@@ -56,6 +64,23 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
+
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.id === selectedProjectId) ?? null,
+    [projects, selectedProjectId]
+  )
+
+  // Filtered board based on selected project
+  const filteredBoard = useMemo<BoardState>(() => {
+    if (selectedProjectId === 'all' || !selectedProject) return board
+    const allowed = new Set(selectedProject.agentIds)
+    const result: BoardState = {}
+    for (const col of COLUMNS) {
+      result[col.id] = board[col.id].filter((a) => allowed.has(a.id))
+    }
+    return result
+  }, [board, selectedProjectId, selectedProject])
 
   const onDragEnd = useCallback((result: DropResult) => {
     const { source, destination } = result
@@ -121,6 +146,32 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
 
   return (
     <>
+      {/* Project filter row */}
+      {projects.length > 0 && (
+        <div className="flex items-center gap-3 mb-4">
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            className="px-3 py-1.5 bg-input-bg border border-border rounded-md text-[13px] focus:outline-none focus:border-primary/60 cursor-pointer"
+          >
+            <option value="all">All Agents</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          {selectedProject && (
+            <Link
+              href={`/projects/${selectedProject.id}`}
+              className="flex items-center gap-1.5 text-[12px] text-muted hover:text-primary transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View project dashboard
+            </Link>
+          )}
+        </div>
+      )}
+
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-3 flex-1 min-h-0 overflow-x-auto pb-2">
           {COLUMNS.map((col) => (
@@ -129,7 +180,7 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
               <div className="flex items-center gap-2 px-2 pb-3">
                 <div className={`w-2 h-2 rounded-full ${col.dot}`} />
                 <span className="text-[13px] font-medium">{col.label}</span>
-                <span className="text-[11px] text-muted ml-auto">{board[col.id].length}</span>
+                <span className="text-[11px] text-muted ml-auto">{filteredBoard[col.id].length}</span>
               </div>
 
               {/* Droppable area */}
@@ -142,7 +193,7 @@ export default function KanbanBoard({ initialAgents }: { initialAgents: Agent[] 
                       snapshot.isDraggingOver ? 'bg-surface' : 'bg-transparent'
                     }`}
                   >
-                    {board[col.id].map((agent, index) => (
+                    {filteredBoard[col.id].map((agent, index) => (
                       <Draggable key={agent.id} draggableId={agent.id} index={index}>
                         {(prov, snap) => (
                           <div

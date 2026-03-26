@@ -12,11 +12,13 @@ import {
   Settings,
   Zap,
   GitBranch,
+  FolderKanban,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/kanban', label: 'Kanban', icon: Columns3 },
+  { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/agents', label: 'Agents', icon: Bot },
   { href: '/agents/tree', label: 'Agent Tree', icon: GitBranch },
   { href: '/sessions', label: 'Sessions', icon: MessageSquare },
